@@ -22,7 +22,8 @@
   - [🗄️ How retention works](#️-how-retention-works)
   - [🧰 More details on the demo](#-more-details-on-the-demo)
 - [🔭 Future work](#-future-work)
-- [🧭 Going further](#-going-further)
+  - [⚡ Fast sync (Demo #1)](#-fast-sync-demo-1)
+  - [🧭 General Axion architecture](#-general-axion-architecture)
 
 ## 🎯 The goal
 
@@ -275,15 +276,15 @@ each produce the results above:
 
 ## 🔭 Future work
 
-*Hardening the MVP.*
+### ⚡ Fast sync (Demo #1)
 
-- 🧅 **Network metadata.** Route over Tor with uniform message sizes and timing jitter, to close the IP/timing residual leaks noted above.
+- 🌊 **Stream-and-peek.** Today the private path downloads the whole gap before it decrypts the advised block; peeking as soon as that block streams in would cut the wait for a just-received payment.
+- 💸 **Instant spendability.** Fast sync surfaces the payment; folding in the advised note's commitment-tree position would make it immediately *spendable*, not just visible.
+
+### 🧭 General Axion architecture
+
+- 🧅 **Network metadata.** Tor with uniform message sizes and timing jitter, to close the IP/timing residual leaks noted above.
 - 🔐 **Post-quantum identity.** The MVP uses a simple Ed25519 per-contact key; a post-quantum signature scheme is a drop-in follow-up (the identity format is versioned).
-
-## 🧭 Going further
-
-*Extending what the channel is good for.*
-
 - 🌐 **Naming layer.** Pay anyone by name via a private name → address-pool lookup (Axion Demo #2).
 - 🗄️ **Durable retention.** Multi-homed mailboxes plus encrypted backup as the post-Tachyon store — and a hosted service.
 - 📦 **Tachyon payload.** Swap the advice pointer for the note secrets once the chain stops carrying ciphertexts.
