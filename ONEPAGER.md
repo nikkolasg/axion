@@ -1,7 +1,5 @@
 # 🛰️ Axion — an out-of-band channel for Zcash
 
-*Useful today. Essential for Tachyon. And it has to be built now.*
-
 ## Contents
 
 - [🎯 The goal](#-the-goal)
