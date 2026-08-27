@@ -61,7 +61,7 @@ flowchart LR
 *Runs end-to-end on a local Zcash network — real node, indexer, relay, and CLI wallet.*
 
 - 📡 **Channel — SimpleX.** No accounts, end-to-end encrypted, self-hostable; per-pair queues, and the relay is trusted only to deliver.
-- 🆔 **Identity — from the seed.** Per-contact keys let a seed-only restore prove who it is and pull back its history (done in ~1 s, no rescan).
+- 🆔 **Identity — from the seed.** Per-contact keys let a wallet prove who it is and pull its history back over the channel, no rescan. (Full seed-*only* recovery is still WIP — it leans on the Step-3 encrypted backup; until then the chain finds every payment anyway, so nothing is ever lost.)
 - 🗄️ **Retention — layered.** Sender re-sends until acknowledged; contacts can re-deliver; the chain backs it up until Tachyon — and 💰 hosted long-term retention is a service zodl could offer.
 - 🕵️ **Anonymity — end to end.** Each sender gets an unlinkable address (two senders shared **zero** identifiers), and the recipient's fast sync makes the **same indexer requests as any wallet** — the server never learns which payment is hers.
 
@@ -81,7 +81,7 @@ flowchart LR
 
 - 🧩 A channel Zcash needs anyway — shipped now as a feature users want.
 - 🏭 Hardening in production for the day Tachyon makes it essential.
-- 🔐 Privacy, safety, and recovery **demonstrated, not promised**.
+- 🔐 Privacy and safety **demonstrated, not promised** — recovery too, with the durable seed-only piece still WIP (the chain is the backstop until then).
 - ⏰ The only wrong time to start is later.
 
 ---
@@ -171,7 +171,12 @@ contacts. While the channel is alive that key sits unused; its real job is
 recovery: a wallet restored from only its seed re-derives the same key, opens a
 new channel, and signs a challenge the contact verifies against the key it
 stored at pairing — proving it is the same person, who can then pull its whole
-history back.
+history back. This flow is demonstrated but still **WIP** for true seed-only
+use: with per-contact keys the restored wallet must also recover *which* subkey
+index each contact used, which is what the Step-3 encrypted backup provides. It
+is not load-bearing today — the chain still finds every payment by normal
+scanning — and only becomes essential once Tachyon takes payment data off the
+chain.
 
 The channel is two-way, but *paying* is one-way per token: only the side that
 handed out an address can be paid on it. If the other side later wants to
@@ -244,7 +249,8 @@ some of them is a natural, recurring revenue line.
 
 ### 🧰 More details on the demo
 
-Everything below runs from a clone — no mocks — and is documented in `DEMO.md`.
+Everything below runs from a clone — no mocks — and is documented in the
+`README` and `TECHNICAL` docs.
 
 **The stack** (all reused off-the-shelf except the wallet):
 
@@ -255,11 +261,12 @@ Everything below runs from a clone — no mocks — and is documented in `DEMO.m
 
 **What we actually wrote** — a new `advice` command family in the wallet fork
 (branch `axion-advice`): the channel client, identity
-and key derivation, the outbox/store, pairing, send, receive, acknowledge,
-flush, rotate, recover, and re-deliver — plus small edits to the sync path so
-the private fast-sync reuses the normal scanner. It ships with **49 unit
-tests** and passed **two independent adversarial code reviews** (findings on
-channel binding, replay, and key handling all fixed).
+and key derivation, the outbox/store, pairing, send, receive, acknowledge
+(with the piggybacked address ratchet), flush, recover, and re-deliver — plus
+small edits to the sync path so the private fast-sync reuses the normal
+scanner. It ships with **37 unit tests** and passed **several independent
+adversarial code reviews** (findings on channel binding, replay, per-contact
+key reuse, and key handling all fixed).
 
 **How it is run** — one command, `devenv up`, starts the whole stack (node,
 indexer, relay, three wallets) as background services. Then scripted scenarios
