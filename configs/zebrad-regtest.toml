@@ -1,0 +1,37 @@
+# zebrad regtest configuration for the Axion Step 1 demo.
+#
+# Activation heights below MUST stay in sync with
+# configs/activation-heights.toml (the wallet-side copy read by
+# zcash-devtool): drift makes the validator reject wallet-built
+# transactions. Zebra's regtest default activates only Canopy, so NU5+
+# (Orchard) must be listed explicitly.
+#
+# The miner address is overridden at runtime via the
+# ZEBRA_MINING__MINER_ADDRESS environment variable (env vars take
+# precedence over this file) once demo-setup has created Bob's wallet.
+
+[network]
+network = "Regtest"
+
+[network.testnet_parameters.activation_heights]
+Overwinter = 1
+Sapling = 1
+Blossom = 1
+Heartwood = 1
+Canopy = 1
+NU5 = 2
+NU6 = 2
+"NU6.1" = 2
+
+[state]
+cache_dir = "/home/zebra/.cache/zebra"
+ephemeral = false
+
+[rpc]
+listen_addr = "0.0.0.0:18232"
+indexer_listen_addr = "0.0.0.0:18230"
+enable_cookie_auth = false
+
+[mining]
+# Placeholder (book example address); overridden by ZEBRA_MINING__MINER_ADDRESS.
+miner_address = "t27eWDgjFYJGVXmzrXeVjnb5J3uXDM9xH9v"

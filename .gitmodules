@@ -1,0 +1,7 @@
+[submodule "zcash-devtool"]
+	path = zcash-devtool
+	url = https://github.com/nikkolasg/zcash-devtool.git
+	branch = axion-advice
+[submodule "zaino"]
+	path = zaino
+	url = https://github.com/zingolabs/zaino.git

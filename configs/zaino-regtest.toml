@@ -1,0 +1,19 @@
+# Zaino indexer configuration for the Axion Step 1 demo (regtest).
+#
+# The database path is injected at runtime by scripts/run-zainod.sh via
+# ZAINO_STORAGE__DATABASE__PATH (env vars take precedence), because TOML
+# cannot reference the per-checkout run/ directory.
+backend = "fetch"
+network = "Regtest"
+
+[grpc_settings]
+listen_address = "127.0.0.1:8137"
+
+[validator_settings]
+# zebrad JSON-RPC ([rpc] listen_addr) and indexer gRPC ([rpc] indexer_listen_addr).
+validator_jsonrpc_listen_address = "127.0.0.1:18232"
+validator_grpc_listen_address = "127.0.0.1:18230"
+
+[storage.database]
+path = "/tmp/axion-zaino-db-overridden-at-runtime"
+size = 8

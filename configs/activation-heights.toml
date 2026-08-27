@@ -1,0 +1,16 @@
+# Regtest activation heights for zcash-devtool wallets (--activation-heights).
+#
+# MUST stay in sync with [network.testnet_parameters.activation_heights] in
+# configs/zebrad-regtest.toml. NU6.2/NU6.3 are "never": the pinned zebra
+# image does not know them, so activating them wallet-side would make the
+# wallet build transactions for a consensus branch the validator rejects.
+overwinter = 1
+sapling = 1
+blossom = 1
+heartwood = 1
+canopy = 1
+nu5 = 2
+nu6 = 2
+nu6_1 = 2
+nu6_2 = "never"
+nu6_3 = "never"
