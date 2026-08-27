@@ -104,6 +104,13 @@ else
     echo "wallet alice-scan already exists, skipping restore"
 fi
 
+# alice-oob is the invite side and mints her first pay-to address during
+# pairing, which requires the wallet to know the chain tip. She was just
+# restored and never synced, so establish it first. Cheap here (demo-noise runs
+# later, so the chain is still small); demo-race re-restores her fresh anyway.
+step "Establishing Alice's chain tip (needed to mint her pairing address)"
+wallet alice-oob sync "${SERVER_ARGS[@]}"
+
 step "Pairing SimpleX contacts (alice <-> bob)"
 if "$DEVTOOL" advice --help >/dev/null 2>&1; then
     if [ -f "$RUN_DIR/simplex/paired" ]; then
