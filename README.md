@@ -1,7 +1,6 @@
 # 🛰️ Axion Step 1 — out-of-band payment advice on Zcash
 
 [![CI](https://github.com/nikkolasg/axion/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nikkolasg/axion/actions/workflows/ci.yml)
-[![wallet CI](https://github.com/nikkolasg/zcash-devtool/actions/workflows/ci.yml/badge.svg?branch=axion-advice)](https://github.com/nikkolasg/zcash-devtool/actions/workflows/ci.yml)
 
 > ⚠️ **Experimental research prototype — regtest only, not audited, not for
 > mainnet funds.** This demonstrates Step 1 of the Axion spec end-to-end on a
