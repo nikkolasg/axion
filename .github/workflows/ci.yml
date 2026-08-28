@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  demo-harness:
+    name: Demo harness checks
+    runs-on: ubuntu-latest
+    steps:
+      # A recursive checkout is the real product here: it fails if either
+      # submodule pin (zcash-devtool @ axion-advice, zaino) is unreachable
+      # over the public HTTPS URLs a cloner would use.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Shell syntax of every demo script
+        run: |
+          set -e
+          for f in scripts/*.sh; do bash -n "$f"; done
+          echo "all scripts parse"
+
+      - name: Submodule URLs are public HTTPS
+        run: |
+          set -e
+          ! git config -f .gitmodules --get-regexp url | grep -v 'https://'
+          echo ".gitmodules is HTTPS-only"
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: zcash-devtool
+
+      - name: Advice code builds and passes its tests
+        working-directory: zcash-devtool
+        run: |
+          cargo build --features regtest_support
+          cargo test --features regtest_support
