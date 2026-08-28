@@ -123,10 +123,14 @@ before it is trusted.
 | `token` | pairing, both ways | Identity token: verification key (+ optional pay-to address) |
 | `advice` | sender → recipient | "Your note is at (txid, height, pool, output_index)" |
 | `ack` | recipient → sender | Acknowledge one advice; carry the next fresh address |
-| `advice_batch` | sender → recovered peer | A chunk of advice envelopes (recovery re-delivery) |
-| `redelivery_done` | sender → recovered peer | End-of-batch marker with a count |
-| `recovery_challenge` | sender → recovered peer | Random nonce; proves seed ownership in the recovery handshake ([§6](#6-channel-command-set-and-message-flows)) |
-| `recovery_proof` | recovered peer → sender | Signature over the nonce with the seed-derived key ([§6](#6-channel-command-set-and-message-flows)) |
+| `advice_batch` | sender → recovered peer | A chunk of advice envelopes (recovery re-delivery) † |
+| `redelivery_done` | sender → recovered peer | End-of-batch marker with a count † |
+| `recovery_challenge` | sender → recovered peer | Random nonce; proves seed ownership in the recovery handshake ([§6](#6-channel-command-set-and-message-flows)) † |
+| `recovery_proof` | recovered peer → sender | Signature over the nonce with the seed-derived key ([§6](#6-channel-command-set-and-message-flows)) † |
+
+† The four recovery messages are specified and implemented, but **disabled in
+default builds** (compiled out behind the wallet's `unstable-recovery` cargo
+feature) — see the status note in [§6](#6-channel-command-set-and-message-flows).
 
 ### `token`
 
@@ -336,7 +340,8 @@ forge the whole ack there gains nothing from the counter.
 
 ## 6. Channel command set and message flows
 
-A wallet drives the channel through six `advice` subcommands. Each is a small
+A wallet drives the channel through four `advice` subcommands (`pair`, `send`,
+`receive`, `flush`) plus the disabled recovery pair. Each is a small
 state machine over the message types in §2; taken together they are the full set
 of operations a user can issue on a SimpleX channel, including the **history
 playback** used after a seed-only restore.
@@ -378,10 +383,12 @@ reconnection. The sender keeps each advice in the outbox until acknowledged; the
 same ack that resolves it also advances the ratchet, so retention and rotation
 ride one message.
 
-### `advice redeliver` / `advice recover` — seed-only history playback (spec §1.3.7)
+### `advice redeliver` / `advice recover` — seed-only history playback (spec §1.3.7, **disabled**)
 
-This is the recovery flow: a wallet restored from only its seed re-obtains its
-entire payment history from a contact, with no chain rescan.
+This is the recovery design: a wallet restored from only its seed re-obtains
+its entire payment history from a contact, with no chain rescan. It is
+implemented and reviewed but **compiled out of default builds** — see the
+status note below for why.
 
 ```
 recovered wallet (recover): publish a fresh invitation link
@@ -400,18 +407,21 @@ The proof is channel-bound, so it cannot be relayed onto another channel. The
 identity key the recovered wallet signs with is the same `K_j` the contact
 stored at first pairing — that continuity is what proves "same person."
 
-**Status — work in progress.** This flow is demonstrated but not complete for
-true seed-only use. With per-contact identity indices (§4), a wallet restored
-from its seed alone does not know which index `j` it used for a given contact,
-so it cannot reproduce the right `K_j` unaided — the demo supplies it with
-`--index <j>`. Restoring the index↔contact map automatically requires an
-additional capability, the **Step 3 encrypted backup**; until that exists,
-robust seed-only identity recovery is unfinished. **This is not load-bearing in
-Step 1:** every advised payment is an ordinary shielded transaction, so a wallet
-that cannot re-establish the channel still finds all its payments by normal
-scanning from the seed (the dual rail, §8). Durable encrypted recovery only
-becomes essential for **Tachyon**, once the chain no longer carries the payment
-ciphertexts.
+**Status — disabled until the Step 3 encrypted backup exists.** With
+per-contact identity indices (§4), a wallet restored from its seed alone does
+not know which index `j` it used for a given contact, so it cannot reproduce
+the right `K_j` unaided — the flow only works when the operator supplies the
+index out of band, which a real user after device loss cannot do. Rather than
+ship a command people would reasonably believe works seed-only, the two
+subcommands and the four recovery messages are **compiled out behind the
+wallet's `unstable-recovery` cargo feature** (the code and its tests remain in
+the tree; the protocol above is the reference for when the index↔contact map
+becomes restorable via the Step 3 encrypted backup). **This is not
+load-bearing in Step 1:** every advised payment is an ordinary shielded
+transaction, so a wallet that cannot re-establish the channel still finds all
+its payments by normal scanning from the seed (the dual rail, §8). Durable
+encrypted recovery only becomes essential for **Tachyon**, once the chain no
+longer carries the payment ciphertexts.
 
 ---
 
@@ -509,9 +519,10 @@ drive state changes are counter- or channel-bound against replay.
 - **The relay learns a relationship exists** on a given queue (not who, not
   what).
 - **`--fast-sync` reveals the txid** to the indexer, by design.
-- **Seed-only recovery is WIP** (§6). Re-establishing a per-contact identity
-  from the seed alone needs the index restored — a Step 3 encrypted-backup
-  capability — so recovery is not yet complete without external state. It is not
+- **Seed-only recovery is disabled** (§6). Re-establishing a per-contact
+  identity from the seed alone needs the index restored — a Step 3
+  encrypted-backup capability — so the `recover`/`redeliver` commands are
+  compiled out (`unstable-recovery` feature) until that exists. It is not
   load-bearing: the chain still finds every payment by normal scanning, and this
   only becomes essential under Tachyon.
 - **Not audited.** The code has unit tests and has been through adversarial

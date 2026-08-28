@@ -1,5 +1,16 @@
 # CHANGES
 
+## Recovery demo removed (feature disabled in the wallet)
+
+The recovery scene (`demo-serve-bob`, `demo-recover-oob`, `demo-recover-scan`)
+is gone: the wallet now compiles `advice recover`/`redeliver` out of default
+builds because seed-only recovery cannot honestly work until the Step 3
+encrypted backup restores the per-contact index map — the demo only passed by
+feeding the wallet an index a real user would have lost. Rather than let
+people believe it works, the scripts were removed and the docs mark recovery
+as disabled, with the dual-rail (chain scanning) as the recovery story for
+now.
+
 ## Retention sweep, standalone rotation, unlinkability
 
 Completed the last Step 1 protocol pieces. `advice flush --to <c>`: the

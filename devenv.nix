@@ -101,10 +101,8 @@ in
     demo-pair-alice.exec = "bash ${root}/scripts/pair-alice.sh";
     demo-pair-bob.exec = "bash ${root}/scripts/pair-bob.sh";
     demo-reset-pairing.exec = "bash ${root}/scripts/reset-pairing.sh";
-    # Recovery scene (spec §1.3.7): seed-only restore + advice re-delivery.
-    demo-serve-bob.exec = "bash ${root}/scripts/serve-bob.sh";
-    demo-recover-oob.exec = "bash ${root}/scripts/recover-oob.sh";
-    demo-recover-scan.exec = "bash ${root}/scripts/recover-scan.sh";
+    # No recovery scene: seed-only recovery is disabled until the Step 3
+    # encrypted backup exists (the wallet gates it behind `unstable-recovery`).
     demo-unlinkability.exec = "bash ${root}/scripts/demo-unlinkability.sh";
     demo-scaling.exec = "bash ${root}/scripts/demo-scaling.sh";
   };

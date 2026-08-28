@@ -61,8 +61,8 @@ flowchart LR
 *Runs end-to-end on a local Zcash network — real node, indexer, relay, and CLI wallet.*
 
 - 📡 **Channel — SimpleX.** No accounts, end-to-end encrypted, self-hostable; per-pair queues, and the relay is trusted only to deliver.
-- 🆔 **Identity — from the seed.** Per-contact keys let a wallet prove who it is and pull its history back over the channel, no rescan. (Full seed-*only* recovery is still WIP — it leans on the Step-3 encrypted backup; until then the chain finds every payment anyway, so nothing is ever lost.)
-- 🗄️ **Retention — layered.** Sender re-sends until acknowledged; contacts can re-deliver; the chain backs it up until Tachyon — and 💰 hosted long-term retention is a service zodl could offer.
+- 🆔 **Identity — from the seed.** Per-contact keys let a wallet prove who it is to its contacts — the anchor for pulling history back with no rescan. (That recovery flow is designed and implemented but **disabled for now**: it needs the Step-3 encrypted backup to be honest seed-only. The chain finds every payment anyway, so nothing is ever lost.)
+- 🗄️ **Retention — layered.** Sender re-sends until acknowledged; contact re-delivery is designed in (disabled until the encrypted backup); the chain backs it up until Tachyon — and 💰 hosted long-term retention is a service zodl could offer.
 - 🕵️ **Anonymity — end to end.** Each sender gets an unlinkable address (two senders shared **zero** identifiers), and the recipient's fast sync makes the **same indexer requests as any wallet** — the server never learns which payment is hers.
 
 ## 📊 The numbers
@@ -81,7 +81,7 @@ flowchart LR
 
 - 🧩 A channel Zcash needs anyway — shipped now as a feature users want.
 - 🏭 Hardening in production for the day Tachyon makes it essential.
-- 🔐 Privacy and safety **demonstrated, not promised** — recovery too, with the durable seed-only piece still WIP (the chain is the backstop until then).
+- 🔐 Privacy and safety **demonstrated, not promised** — and what isn't honest yet (seed-only recovery, pending the encrypted backup) is **switched off, not oversold**; the chain is the backstop until then.
 - ⏰ The only wrong time to start is later.
 
 ---
@@ -171,12 +171,13 @@ contacts. While the channel is alive that key sits unused; its real job is
 recovery: a wallet restored from only its seed re-derives the same key, opens a
 new channel, and signs a challenge the contact verifies against the key it
 stored at pairing — proving it is the same person, who can then pull its whole
-history back. This flow is demonstrated but still **WIP** for true seed-only
-use: with per-contact keys the restored wallet must also recover *which* subkey
-index each contact used, which is what the Step-3 encrypted backup provides. It
-is not load-bearing today — the chain still finds every payment by normal
-scanning — and only becomes essential once Tachyon takes payment data off the
-chain.
+history back. This flow is implemented and reviewed but **disabled for now**:
+with per-contact keys the restored wallet must also recover *which* subkey
+index each contact used, which is exactly what the Step-3 encrypted backup
+provides — so rather than ship a recovery that quietly depends on state a real
+user would have lost, we switched it off until that backup exists. It is not
+load-bearing today — the chain still finds every payment by normal scanning —
+and only becomes essential once Tachyon takes payment data off the chain.
 
 The channel is two-way, but *paying* is one-way per token: only the side that
 handed out an address can be paid on it. If the other side later wants to
@@ -235,7 +236,9 @@ reconnection — and that same acknowledgment is what advances the address
 ratchet described above, so retention and address rotation ride on one message.
 Because channels are two-way and each contact keeps its own outbox, any contact
 can re-deliver history on request — the contact graph itself becomes a
-distributed backup. Today the chain is the ultimate backstop; after Tachyon
+distributed backup (the re-delivery flow is implemented but disabled until the
+encrypted backup makes it work from a bare seed).
+Today the chain is the ultimate backstop; after Tachyon
 removes it, replication across multiple mailboxes plus an encrypted wallet
 backup becomes the durable store, all of it automatic and never entrusted to
 the user.
@@ -262,18 +265,18 @@ Everything below runs from a clone — no mocks — and is documented in the
 **What we actually wrote** — a new `advice` command family in the wallet fork
 (branch `axion-advice`): the channel client, identity
 and key derivation, the outbox/store, pairing, send, receive, acknowledge
-(with the piggybacked address ratchet), flush, recover, and re-deliver — plus
-small edits to the sync path so the private fast-sync reuses the normal
-scanner. It ships with **37 unit tests** and passed **several independent
-adversarial code reviews** (findings on channel binding, replay, per-contact
-key reuse, and key handling all fixed).
+(with the piggybacked address ratchet), and flush — plus the recovery flow,
+kept compiled-out until the encrypted backup makes it honest — and small edits
+to the sync path so the private fast-sync reuses the normal scanner. It ships
+with **49 unit tests** and passed **several independent adversarial code
+reviews** (findings on channel binding, replay, per-contact key reuse, and key
+handling all fixed).
 
 **How it is run** — one command, `devenv up`, starts the whole stack (node,
 indexer, relay, three wallets) as background services. Then scripted scenarios
 each produce the results above:
 
 - 🏁 `demo-race` — the fast-sync head-to-head vs a vanilla wallet.
-- ♻️ `demo-recover-*` — seed-only recovery via re-delivery.
 - 🕵️ `demo-unlinkability` — two senders, zero shared identifiers.
 - 📈 `demo-scaling` — the numbers table at 3.6k / 10k outputs and the 1-month gap.
 

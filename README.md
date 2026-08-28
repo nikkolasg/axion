@@ -71,12 +71,12 @@ Other scenarios (each is a script under `scripts/`):
 |---|---|
 | `demo-pay` | Send one paid-and-advised payment (`NO_ADVICE=1` skips the advice). |
 | `demo-race` | Fast-sync head-to-head vs a vanilla wallet; ends with the relay-killed fallback. |
-| `demo-recover-oob` / `demo-serve-bob` | Seed-only recovery via re-delivery (spec §1.3.7 — **WIP**, see Notes). |
 | `demo-unlinkability` | Two senders paying one recipient — zero shared identifiers. |
 | `demo-scaling` | The timing numbers at ~3.6k / 10k outputs and a ~1-month gap. |
 
-Video-friendly single-window pieces exist too (`demo-pair-*`, `demo-watch-*`,
-`demo-recover-*`) for recording each actor in its own window.
+There is deliberately **no recovery scenario** — see the disabled-recovery note
+in [Notes & quirks](#-notes--quirks). Video-friendly single-window pieces exist
+too (`demo-pair-*`, `demo-watch-*`) for recording each actor in its own window.
 
 Ports (all localhost-only): zebrad RPC 18232, zebrad indexer gRPC 18230, zainod
 gRPC 8137, smp-server 5223, simplex WS alice 5226 / bob 5227 / carol 5228.
@@ -98,11 +98,12 @@ into their natural homes. This table is the porting map.
 | **Persistent state** — peers, outbox, index counter | `advice/store.rs` (JSON files) | The **wallet database** (`zcash_client_sqlite`) as tables. |
 | **Ironwood (NU6.3) support** — subtree roots, output decoding, one indexer-compat hunk | consumed from the pinned **librustzcash** rev; compat hunk in `wallet/sync.rs` | Upstream **librustzcash / zaino** (already largely there at the pinned rev). |
 
-The `advice` command family — six subcommands: **`pair`, `send`, `receive`,
-`flush`, `redeliver`, `recover`** — ships with **37 unit tests** and has been
-through several adversarial code reviews (findings on channel binding, replay,
-key handling, and per-contact key reuse all fixed). See
-[TECHNICAL.md](TECHNICAL.md) for exactly what each does on the wire.
+The `advice` command family — **`pair`, `send`, `receive`, `flush`** (plus
+`redeliver`/`recover`, compiled out behind the `unstable-recovery` feature —
+see Notes) — ships with **49 unit tests** and has been through several
+adversarial code reviews (findings on channel binding, replay, key handling,
+and per-contact key reuse all fixed). See [TECHNICAL.md](TECHNICAL.md) for
+exactly what each does on the wire.
 
 ## 🔭 Extensions
 
@@ -114,7 +115,7 @@ Directions that would extend the demo, kept separate from what it does today
   mailbox — for example a [Nym](https://nym.com) mailbox — would hold advice for
   an offline recipient and hand it over on reconnect, without relying on the
   sender to re-send it. This is the transport-layer counterpart to the
-  application-level replay (`recover`/`flush`) the demo already provides.
+  application-level re-send (`advice flush`) the demo already provides.
 
 ## 📝 Notes & quirks
 
@@ -124,25 +125,26 @@ Directions that would extend the demo, kept separate from what it does today
 - The OOB path yields a **detected, chain-verified** payment (time-to-visibility,
   what the spec promises). Making the note immediately *spendable* additionally
   needs commitment-tree data from the unmodified background scanner.
-- **Two kinds of replay — the demo provides one.** *Application-level* replay
-  works: after a seed-only restore, `advice recover`/`redeliver` pulls a
-  contact's whole outbox back, and `advice flush` re-sends un-acked advice, so a
-  payment is never lost. What is not wired up is *transport-level* offline
-  delivery: `advice receive` only catches messages pushed live over the
+- **Two kinds of replay — the demo provides one.** *Application-level* re-send
+  works: `advice flush` re-sends un-acked advice on reconnection, so a payment
+  notice is never silently dropped. What is not wired up is *transport-level*
+  offline delivery: `advice receive` only catches messages pushed live over the
   WebSocket, so it will not re-read an advice that arrived while it was not
   listening. A store-and-forward mailbox would close that — see
   [Extensions](#-extensions).
-- **Seed-only recovery is work-in-progress.** The re-delivery flow
-  (`recover`/`redeliver`) is demonstrated, but true *seed-only* identity
-  recovery isn't complete: with per-contact keys, a wallet restored from its
-  seed alone doesn't know which subkey index it used for each contact, so it
-  needs that index restored — a capability that belongs with the **Step-3
-  encrypted backup** (the demo supplies it via `--index`). **This costs nothing
-  today:** every advised payment is an ordinary shielded tx, so even if the
-  channel can't be re-established, the wallet still finds all its payments by
-  normal scanning from the seed (the dual rail). Durable encrypted recovery only
-  becomes essential for **Tachyon**, once the chain stops carrying the payment
-  data.
+- **Seed-only recovery is DISABLED for now** (no `advice recover`/`redeliver`
+  commands, no recovery demo). The channel-level flow — prove your seed-derived
+  identity to a contact, have it replay its outbox — is implemented and
+  reviewed, but it cannot honestly work *seed-only* yet: with per-contact keys,
+  a wallet restored from its seed alone does not know which subkey index each
+  contact holds, and restoring that map is exactly what the future **Step-3
+  encrypted backup** provides. Rather than ship a command that only works when
+  the operator supplies state a real user would have lost, the code is compiled
+  out behind the `unstable-recovery` cargo feature until the backup exists.
+  **This costs nothing today:** every advised payment is an ordinary shielded
+  tx, so a wallet restored from seed still finds all its funds by normal
+  scanning (the dual rail). Durable encrypted recovery only becomes essential
+  for **Tachyon**, once the chain stops carrying the payment data.
 - All demo state lives in `run/` (gitignored). For a **factory reset**, run
   **`demo-reset`** — it stops the stack and wipes `run/` as a unit (chain,
   wallets, and relay identity together), then `devenv up -d && demo-setup`
